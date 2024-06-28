@@ -74,5 +74,4 @@ Plugins/*/Intermediate/*
 DerivedDataCache/*
 
 # Ignore these folders
-Content/ParagonGideon/
-Content/ParagonKwang/
+
