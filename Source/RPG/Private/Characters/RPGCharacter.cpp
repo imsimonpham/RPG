@@ -22,12 +22,12 @@ ARPGCharacter::ARPGCharacter()
 	//Match character rotation with moving direction
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 360.f, 0.f);
+
 }
 
 void ARPGCharacter::BeginPlay()
 {
-	Super::BeginPlay();
-	
+	Super::BeginPlay();	
 }
 
 void ARPGCharacter::Tick(float DeltaTime)
@@ -45,6 +45,8 @@ void ARPGCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	PlayerInputComponent->BindAxis(FName("Turn"), this, &ARPGCharacter::Turn);
 	PlayerInputComponent->BindAxis(FName("LookUp"), this, &ARPGCharacter::LookUp);
 	PlayerInputComponent->BindAxis(FName("MoveRight"), this, &ARPGCharacter::MoveRight);
+
+	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ARPGCharacter::Sprint);
 }
 
 void ARPGCharacter::MoveForward(float Value)
@@ -55,7 +57,7 @@ void ARPGCharacter::MoveForward(float Value)
 		const FRotator  ControlRotation = GetControlRotation();
 		const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X); //X is forward vector
-		AddMovementInput(Direction, Value);
+		AddMovementInput(Direction, Value * SpeedMultiplier);
 	}
 }
 void ARPGCharacter::Turn(float Value)
@@ -75,9 +77,22 @@ void ARPGCharacter::MoveRight(float Value)
 		const FRotator  ControlRotation = GetControlRotation();
 		const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y); //Y is right vector
-		AddMovementInput(Direction, Value);
+		AddMovementInput(Direction, Value * SpeedMultiplier);
 	}
 }
+
+void ARPGCharacter::Sprint()
+{
+	IsSprinting = !IsSprinting;
+	if (IsSprinting)
+	{
+		SpeedMultiplier = 1.f;
+	}
+	else {
+		SpeedMultiplier = 0.5f;
+	}
+}
+
 
 
 #pragma endregion

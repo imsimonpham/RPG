@@ -22,6 +22,13 @@ protected:
 	void Turn(float Value);
 	void LookUp(float Value);
 	void MoveRight(float Value);
+	void Sprint();
+
+	UPROPERTY(VisibleAnywhere)
+	float SpeedMultiplier = 0.5f;
+
+	UPROPERTY(EditAnywhere)
+	bool IsSprinting = false;
 
 private:
 	UPROPERTY(VisibleAnywhere)
