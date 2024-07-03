@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
+#include "CharacterStates.h"
 #include "RPGAnimInstance.generated.h"
 
 /**
@@ -19,12 +20,20 @@ public:
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaTime) override;
 
-	UPROPERTY(BlueprintReadWrite) //BlueprintReadWrite/BlueprintReadOnly will expose this to event graph
+	UPROPERTY(BlueprintReadOnly) //BlueprintReadWrite/BlueprintReadOnly will expose this to event graph
 	class ARPGCharacter* Character;
 
-	UPROPERTY(BlueprintReadWrite, Category = "Movement")
+	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	class UCharacterMovementComponent* CharacterMovement;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	float CurrentSpeed;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	float CurrentDirection;
+
+	static float CalculateDirection(const FVector& Velocity, const FRotator& BaseRotation);
+
 	UPROPERTY(BlueprintReadWrite, Category = "Movement")
-	float GroundSpeed;
+	EMovementState MovementState;
 };

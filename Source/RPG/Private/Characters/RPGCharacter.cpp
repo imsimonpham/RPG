@@ -2,6 +2,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharactermovementComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 ARPGCharacter::ARPGCharacter()
 {
@@ -34,6 +35,7 @@ void ARPGCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	CalculateMovementSpeed();
 }
 
 #pragma region PlayerInput
@@ -49,17 +51,6 @@ void ARPGCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ARPGCharacter::Sprint);
 }
 
-void ARPGCharacter::MoveForward(float Value)
-{
-	if (Controller && (Value != 0.f))
-	{
-		//FRotator3d(double InPitch, double InYaw, double InRoll)
-		const FRotator  ControlRotation = GetControlRotation();
-		const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
-		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X); //X is forward vector
-		AddMovementInput(Direction, Value * SpeedMultiplier);
-	}
-}
 void ARPGCharacter::Turn(float Value)
 {
 	AddControllerYawInput(Value);
@@ -69,21 +60,56 @@ void ARPGCharacter::LookUp(float Value)
 	AddControllerPitchInput(Value);
 }
 
+void ARPGCharacter::MoveForward(float Value)
+{
+	MoveForwardValue = Value;
+	UpdateCharacterMovement();
+}
+
 void ARPGCharacter::MoveRight(float Value)
 {
-	if (Controller && (Value != 0.f))
+	MoveRightValue = Value;
+	UpdateCharacterMovement();
+}
+
+void ARPGCharacter::UpdateCharacterMovement()
+{
+	if (Controller)
 	{
-		//FRotator3d(double InPitch, double InYaw, double InRoll)
 		const FRotator  ControlRotation = GetControlRotation();
 		const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
-		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y); //Y is right vector
-		AddMovementInput(Direction, Value * SpeedMultiplier);
+		const FVector DirectionForward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		const FVector DirectionRight = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+		const FVector Direction = DirectionForward + DirectionRight;
+		AddMovementInput(Direction, (MoveForwardValue + MoveRightValue )* SpeedMultiplier);
 	}
+
+	//if (Controller && (MoveForwardValue != 0.f))
+	//{
+	//	//FRotator3d(double InPitch, double InYaw, double InRoll)
+	//	const FRotator  ControlRotation = GetControlRotation();
+	//	const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
+	//	const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X); //X is forward vector
+	//	AddMovementInput(Direction, MoveForwardValue * SpeedMultiplier);
+	//}
+
+	//if (Controller && (MoveRightValue != 0.f))
+	//{
+	//	//FRotator3d(double InPitch, double InYaw, double InRoll)
+	//	const FRotator  ControlRotation = GetControlRotation();
+	//	const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
+	//	const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y); //Y is right vector
+	//	AddMovementInput(Direction, MoveRightValue * SpeedMultiplier);
+	//}
 }
 
 void ARPGCharacter::Sprint()
 {
 	IsSprinting = !IsSprinting;
+}
+
+void ARPGCharacter::AdjustSpeedMultiplier()
+{
 	if (IsSprinting)
 	{
 		SpeedMultiplier = 1.f;
@@ -91,6 +117,18 @@ void ARPGCharacter::Sprint()
 	else {
 		SpeedMultiplier = 0.5f;
 	}
+}
+
+void ARPGCharacter::CalculateMovementSpeed()
+{
+	FVector Velocity = GetCharacterMovement()->Velocity;
+	CurrentSpeed = UKismetMathLibrary::VSizeXY(Velocity);
+
+	if (CurrentSpeed == 0)
+	{
+		IsSprinting = false;
+	}
+	AdjustSpeedMultiplier();
 }
 
 
