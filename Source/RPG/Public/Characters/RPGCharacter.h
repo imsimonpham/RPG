@@ -24,13 +24,18 @@ protected:
 	//movement and look
 	void MoveForward(float Value);
 	void MoveRight(float Value);
-	void UpdateCharacterMovement();
 	void Turn(float Value);
 	void LookUp(float Value);
 	void Sprint();
 
 	UPROPERTY(VisibleAnywhere)
-	float SpeedMultiplier = 0.5f;
+	float SprintingSpeedMultiplier = 0.5f;
+
+	UPROPERTY(VisibleAnywhere)
+	float BackwardSpeedMultiplier = 0.85f;
+
+	UPROPERTY(VisibleAnywhere)
+	FVector Direction;
 
 	UPROPERTY(VisibleAnywhere)
 	float MoveForwardValue;
