@@ -8,21 +8,15 @@ ARPGCharacter::ARPGCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	//Controller Rotation
-	bUseControllerRotationPitch = false;
-	bUseControllerRotationRoll = false;
-	bUseControllerRotationYaw = false;
-
 	//CameraBoom and Camera
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetRootComponent());
-	CameraBoom->TargetArmLength = 300.f;
 	ViewCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("ViewCamera"));
 	ViewCamera->SetupAttachment(CameraBoom);
 
 	//Match character rotation with moving direction
-	GetCharacterMovement()->bOrientRotationToMovement = true;
-	GetCharacterMovement()->RotationRate = FRotator(0.f, 360.f, 0.f);
+	/*GetCharacterMovement()->bOrientRotationToMovement = true;
+	GetCharacterMovement()->RotationRate = FRotator(0.f, 360.f, 0.f);*/
 
 }
 
@@ -53,11 +47,13 @@ void ARPGCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 
 void ARPGCharacter::Turn(float Value)
 {
-	AddControllerYawInput(Value);
+	TurnValue = Value;
+	AddControllerYawInput(TurnValue * TurnSensitivityModifier);
 }
 void ARPGCharacter::LookUp(float Value)
 {
-	AddControllerPitchInput(Value);
+	LookUpValue = Value;
+	AddControllerPitchInput(LookUpValue * LookSensitityModifier);
 }
 
 void ARPGCharacter::MoveForward(float Value)
@@ -71,14 +67,14 @@ void ARPGCharacter::MoveForward(float Value)
 		MoveForwardValue = Value / FMath::Sqrt(2.0f);
 	}
 
-	if (MoveForwardValue < 0)
+	/*if (MoveForwardValue < 0)
 	{
 		BackwardSpeedMultiplier = 0.85f;
 	}
 	else
 	{
 		BackwardSpeedMultiplier = 1.f;
-	}
+	}*/
 
 	if (Controller && (MoveForwardValue != 0.f))
 	{
@@ -86,7 +82,7 @@ void ARPGCharacter::MoveForward(float Value)
 		const FRotator  ControlRotation = GetControlRotation();
 		const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
 		Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X); //X is forward vector
-		AddMovementInput(Direction.GetSafeNormal(), MoveForwardValue * SprintingSpeedMultiplier * BackwardSpeedMultiplier);
+		AddMovementInput(Direction.GetSafeNormal(), MoveForwardValue * SprintingSpeedMultiplier);
 	}
 }
 
@@ -101,14 +97,14 @@ void ARPGCharacter::MoveRight(float Value)
 		MoveRightValue = Value / FMath::Sqrt(2.0f);
 	}
 
-	if (MoveForwardValue < 0)
+	/*if (MoveForwardValue < 0)
 	{
 		BackwardSpeedMultiplier = 0.85f;
 	}
 	else
 	{
 		BackwardSpeedMultiplier = 1.f;
-	}
+	}*/
 
 	if (Controller && (MoveRightValue != 0.f))
 	{
@@ -116,7 +112,7 @@ void ARPGCharacter::MoveRight(float Value)
 		const FRotator  ControlRotation = GetControlRotation();
 		const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
 		Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y); //Y is right vector
-		AddMovementInput(Direction.GetSafeNormal(), MoveRightValue * SprintingSpeedMultiplier * BackwardSpeedMultiplier);
+		AddMovementInput(Direction.GetSafeNormal(), MoveRightValue * SprintingSpeedMultiplier);
 	}
 }
 
@@ -141,9 +137,19 @@ void ARPGCharacter::CalculateMovementSpeed()
 	FVector Velocity = GetCharacterMovement()->Velocity;
 	CurrentSpeed = UKismetMathLibrary::VSizeXY(Velocity);
 
+	if (MoveForwardValue < 0)
+	{
+		IsSprinting = false;
+	}
+
 	if (CurrentSpeed == 0)
 	{
 		IsSprinting = false;
+		bUseControllerRotationYaw = false;
+	}
+	else
+	{
+		bUseControllerRotationYaw = true;
 	}
 	AdjustSpeedMultiplier();
 }

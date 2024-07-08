@@ -27,6 +27,11 @@ void URPGAnimInstance::NativeUpdateAnimation(float DeltaTime)
 		const FVector Velocity = Character->GetCharacterMovement()->Velocity;
 		CurrentDirection = CalculateDirection(Velocity, Rotation);
 		CurrentSpeed = Character->GetCurrentSpeed();
+		//if (GEngine)
+		//{
+		//	FString DebugMessage = FString::Printf(TEXT("Current Speed: %f"), CurrentSpeed);
+		//	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, DebugMessage);
+		//}
 	}
 }
 

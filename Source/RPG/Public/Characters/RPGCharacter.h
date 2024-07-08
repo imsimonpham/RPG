@@ -43,6 +43,18 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	float MoveRightValue;
 
+	UPROPERTY(VisibleAnywhere)
+	float LookUpValue;
+
+	UPROPERTY(VisibleAnywhere)
+	float TurnValue;
+
+	UPROPERTY(VisibleAnywhere)
+	float LookSensitityModifier = 0.3f;
+
+	UPROPERTY(VisibleAnywhere)
+	float TurnSensitivityModifier = 0.3f;
+
 private:
 	UPROPERTY(VisibleAnywhere)
 	class USpringArmComponent* CameraBoom;
