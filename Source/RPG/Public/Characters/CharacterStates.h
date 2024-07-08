@@ -1,9 +1,9 @@
 #pragma once
 
 UENUM(BlueprintType)
-enum class EMovementState : uint8
+enum class EActionState : uint8
 {
-	EMS_Idle UMETA(DisplayName = "Idle"),
-	EMS_Walk UMETA(DisplayName = "Walk"),
-	EMS_Sprint UMETA(DisplayName = "Sprint")
+	EAS_Neutral UMETA(Displayname = "Neutral"),
+	EAS_Dodging UMETA(DisplayName = "Dodging"),
+	EAS_Attacking UMETA(DisplayName = "Attacking")
 };

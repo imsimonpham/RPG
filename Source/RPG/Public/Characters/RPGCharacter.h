@@ -15,45 +15,26 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	UPROPERTY (VisibleAnyWhere, BlueprintReadOnly, Category = "Movement")
-	float CurrentSpeed;
-
 protected:
 	virtual void BeginPlay() override;
 
-	//movement and look
+	//movement input handlers
 	void MoveForward(float Value);
 	void MoveRight(float Value);
 	void Turn(float Value);
 	void LookUp(float Value);
 	void Sprint();
+	void Dodge();
 
-	UPROPERTY(VisibleAnywhere)
-	float SprintingSpeedMultiplier = 0.5f;
+	void AdjustSpeedMultiplier();
+	void CalculateMovementSpeed();
 
-	UPROPERTY(VisibleAnywhere)
-	float BackwardSpeedMultiplier = 0.85f;
+	//combat
+	void PlayMontageSection(UAnimMontage* Montage, const FName& SectionName);
 
-	UPROPERTY(VisibleAnywhere)
-	FVector Direction;
-
-	UPROPERTY(VisibleAnywhere)
-	float MoveForwardValue;
-
-	UPROPERTY(VisibleAnywhere)
-	float MoveRightValue;
-
-	UPROPERTY(VisibleAnywhere)
-	float LookUpValue;
-
-	UPROPERTY(VisibleAnywhere)
-	float TurnValue;
-
-	UPROPERTY(VisibleAnywhere)
-	float LookSensitityModifier = 0.3f;
-
-	UPROPERTY(VisibleAnywhere)
-	float TurnSensitivityModifier = 0.3f;
+	//montages
+	UPROPERTY(EditDefaultsOnly, Category = "Combat")
+	class UAnimMontage* DodgeMontage;
 
 private:
 	UPROPERTY(VisibleAnywhere)
@@ -62,22 +43,39 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	class UCameraComponent* ViewCamera;
 
+	//camera
+	void AdjustCameraDistance();
+	float MaxTargetArmLength = 200.f;
+	float MinTargetArmLength = 150.f;
+	float InterpSpeed = 2.f;
+	UPROPERTY(VisibleAnywhere)
+	bool CanAdjustCameraDistance = false;
+
+	//character movement
+	float SprintingSpeedMultiplier = 0.5f;
+	FVector Direction;
+
+	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+	float CurrentSpeed;
+
 	UPROPERTY(VisibleAnywhere)
 	bool IsSprinting = false;
 
 	UPROPERTY(VisibleAnywhere)
-	bool IsWalking = false;
+	float MoveForwardValue;
 
 	UPROPERTY(VisibleAnywhere)
-	EMovementState MovementState = EMovementState::EMS_Idle;
+	float MoveRightValue;
 
-	void AdjustSpeedMultiplier();
-	void CalculateMovementSpeed();
+	float LookUpValue;
+	float TurnValue;
+	float LookSensitityModifier = 0.3f;
+	float TurnSensitivityModifier = 0.3f;
 
-	float WalkSpeed = 300.f;
-	float SprintSpeed = 600.f;
+	//character state
+	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	EActionState ActionState = EActionState::EAS_Neutral;
 	
 public:
-	FORCEINLINE EMovementState GetMovementState() const { return MovementState; }
 	FORCEINLINE float GetCurrentSpeed() const { return CurrentSpeed; }
 };

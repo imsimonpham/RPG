@@ -1,8 +1,10 @@
 #include "Characters/RPGCharacter.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/CharactermovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Animation/AnimInstance.h"
 
 ARPGCharacter::ARPGCharacter()
 {
@@ -13,10 +15,6 @@ ARPGCharacter::ARPGCharacter()
 	CameraBoom->SetupAttachment(GetRootComponent());
 	ViewCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("ViewCamera"));
 	ViewCamera->SetupAttachment(CameraBoom);
-
-	//Match character rotation with moving direction
-	/*GetCharacterMovement()->bOrientRotationToMovement = true;
-	GetCharacterMovement()->RotationRate = FRotator(0.f, 360.f, 0.f);*/
 
 }
 
@@ -43,6 +41,7 @@ void ARPGCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	PlayerInputComponent->BindAxis(FName("MoveRight"), this, &ARPGCharacter::MoveRight);
 
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ARPGCharacter::Sprint);
+	PlayerInputComponent->BindAction("Dodge", IE_Pressed, this, &ARPGCharacter::Dodge);
 }
 
 void ARPGCharacter::Turn(float Value)
@@ -58,23 +57,7 @@ void ARPGCharacter::LookUp(float Value)
 
 void ARPGCharacter::MoveForward(float Value)
 {
-	if (MoveRightValue == 0)
-	{
-		MoveForwardValue = Value;
-	}
-	else
-	{
-		MoveForwardValue = Value / FMath::Sqrt(2.0f);
-	}
-
-	/*if (MoveForwardValue < 0)
-	{
-		BackwardSpeedMultiplier = 0.85f;
-	}
-	else
-	{
-		BackwardSpeedMultiplier = 1.f;
-	}*/
+	MoveForwardValue = MoveRightValue == 0 ? Value : Value / FMath::Sqrt(2.0f);
 
 	if (Controller && (MoveForwardValue != 0.f))
 	{
@@ -88,28 +71,12 @@ void ARPGCharacter::MoveForward(float Value)
 
 void ARPGCharacter::MoveRight(float Value)
 {
-	if (MoveForwardValue == 0)
-	{
-		MoveRightValue = Value;
-	}
-	else
-	{
-		MoveRightValue = Value / FMath::Sqrt(2.0f);
-	}
-
-	/*if (MoveForwardValue < 0)
-	{
-		BackwardSpeedMultiplier = 0.85f;
-	}
-	else
-	{
-		BackwardSpeedMultiplier = 1.f;
-	}*/
+	MoveRightValue = MoveForwardValue == 0 ? Value : Value / FMath::Sqrt(2.0f);
 
 	if (Controller && (MoveRightValue != 0.f))
 	{
 		//FRotator3d(double InPitch, double InYaw, double InRoll)
-		const FRotator  ControlRotation = GetControlRotation();
+		const FRotator  ControlRotation = GetActorRotation();
 		const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
 		Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y); //Y is right vector
 		AddMovementInput(Direction.GetSafeNormal(), MoveRightValue * SprintingSpeedMultiplier);
@@ -121,15 +88,58 @@ void ARPGCharacter::Sprint()
 	IsSprinting = !IsSprinting;
 }
 
+void ARPGCharacter::Dodge()
+{	
+	// Map to store montage section names based on MoveForwardValue and MoveRightValue
+	TMap<FVector2D, FName> DirectionMap;
+	DirectionMap.Add(FVector2D(0.f, 0.f), FName("Dodge_Neutral"));
+	DirectionMap.Add(FVector2D(1.f, 0.f), FName("Dodge_Forward"));
+	DirectionMap.Add(FVector2D(-1.f, 0.f), FName("Dodge_Backward"));
+	DirectionMap.Add(FVector2D(0.f, 1.f), FName("Dodge_Right"));
+	DirectionMap.Add(FVector2D(0.f, -1.f), FName("Dodge_Left"));
+	DirectionMap.Add(FVector2D(1.f, 1.f), FName("Dodge_Forward_Right"));
+	DirectionMap.Add(FVector2D(1.f, -1.f), FName("Dodge_Forward_Left"));
+	DirectionMap.Add(FVector2D(-1.f, 1.f), FName("Dodge_Backward_Right"));
+	DirectionMap.Add(FVector2D(-1.f, -1.f), FName("Dodge_Backward_Left"));
+
+	// Create a vector representing current movement direction
+	FVector2D GroundDirection = FVector2D(MoveForwardValue, MoveRightValue).GetSafeNormal();
+
+	// Find the closest matching direction in the map (using tolerance)
+	float BestMatchDot = -2.f; // Initialize to a value lower than -1 to ensure it's updated
+	FName MontageSectionName = FName("Dodge_Neutral"); // Default to neutral if no exact match found
+
+	for (const auto& Pair : DirectionMap)
+	{
+		float Dot = FVector2D::DotProduct(GroundDirection, Pair.Key);
+
+		// Use a small tolerance to handle floating point precision issues
+		if (Dot > BestMatchDot + 0.1f)
+		{
+			BestMatchDot = Dot;
+			MontageSectionName = Pair.Value;
+		}
+	}
+
+	// Play the montage section
+	if (ActionState == EActionState::EAS_Neutral)
+	{
+		PlayMontageSection(DodgeMontage, MontageSectionName);
+		ActionState = EActionState::EAS_Dodging;
+	}
+	
+}
+
 void ARPGCharacter::AdjustSpeedMultiplier()
 {
-	if (IsSprinting)
-	{
-		SprintingSpeedMultiplier = 1.f;
-	}
-	else {
-		SprintingSpeedMultiplier = 0.5f;
-	}
+	SprintingSpeedMultiplier = IsSprinting ? 1.f : 0.5f;
+}
+
+void ARPGCharacter::AdjustCameraDistance()
+{
+	float TargetLength = CanAdjustCameraDistance ? MaxTargetArmLength : MinTargetArmLength;
+	float CurrentLength = CameraBoom->TargetArmLength;
+	CameraBoom->TargetArmLength = FMath::Lerp(CurrentLength, TargetLength, InterpSpeed * GetWorld()->DeltaTimeSeconds);
 }
 
 void ARPGCharacter::CalculateMovementSpeed()
@@ -137,23 +147,26 @@ void ARPGCharacter::CalculateMovementSpeed()
 	FVector Velocity = GetCharacterMovement()->Velocity;
 	CurrentSpeed = UKismetMathLibrary::VSizeXY(Velocity);
 
-	if (MoveForwardValue < 0)
+	if (MoveForwardValue < 0 || CurrentSpeed == 0)
 	{
 		IsSprinting = false;
 	}
 
-	if (CurrentSpeed == 0)
-	{
-		IsSprinting = false;
-		bUseControllerRotationYaw = false;
-	}
-	else
-	{
-		bUseControllerRotationYaw = true;
-	}
+	CanAdjustCameraDistance = IsSprinting ? true : false;
+	bUseControllerRotationYaw = CurrentSpeed == 0 ? false : true;
+
 	AdjustSpeedMultiplier();
+	AdjustCameraDistance();
 }
 
-
+void ARPGCharacter::PlayMontageSection(UAnimMontage* Montage, const FName& SectionName)
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && Montage)
+	{
+		AnimInstance->Montage_Play(Montage);
+		AnimInstance->Montage_JumpToSection(SectionName, Montage);
+	}
+}
 
 #pragma endregion

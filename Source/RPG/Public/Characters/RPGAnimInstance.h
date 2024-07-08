@@ -7,9 +7,6 @@
 #include "CharacterStates.h"
 #include "RPGAnimInstance.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class RPG_API URPGAnimInstance : public UAnimInstance
 {
@@ -20,7 +17,7 @@ public:
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaTime) override;
 
-	UPROPERTY(BlueprintReadOnly) //BlueprintReadWrite/BlueprintReadOnly will expose this to event graph
+	UPROPERTY(BlueprintReadWrite) //BlueprintReadWrite/BlueprintReadOnly will expose this to event graph
 	class ARPGCharacter* Character;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
@@ -33,7 +30,4 @@ public:
 	float CurrentDirection;
 
 	static float CalculateDirection(const FVector& Velocity, const FRotator& BaseRotation);
-
-	UPROPERTY(BlueprintReadWrite, Category = "Movement")
-	EMovementState MovementState;
 };

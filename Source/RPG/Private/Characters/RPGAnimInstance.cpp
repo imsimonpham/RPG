@@ -10,7 +10,6 @@ void URPGAnimInstance::NativeInitializeAnimation()
 	Super::NativeInitializeAnimation();
 
 	Character = Cast<ARPGCharacter>(TryGetPawnOwner());
-	Character = Cast<ARPGCharacter>(TryGetPawnOwner());
 	if (Character)
 	{
 		CharacterMovement = Character->GetCharacterMovement();
