@@ -137,9 +137,52 @@ void ARPGCharacter::AdjustSpeedMultiplier()
 
 void ARPGCharacter::AdjustCameraDistance()
 {
+	if (IsSprinting || ActionState == EActionState::EAS_Dodging)
+	{
+		IncreaseCameraDistance();
+		ClearTimer();
+	}
+	else
+	{
+		if (!IsTimerActive())
+		{
+			//reset camera distance with a delay
+			GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ARPGCharacter::ResetCameraDistance, 1.0f, false);
+		}
+	}
+
 	float TargetLength = CanAdjustCameraDistance ? MaxTargetArmLength : MinTargetArmLength;
 	float CurrentLength = CameraBoom->TargetArmLength;
 	CameraBoom->TargetArmLength = FMath::Lerp(CurrentLength, TargetLength, InterpSpeed * GetWorld()->DeltaTimeSeconds);
+}
+
+void ARPGCharacter::IncreaseCameraDistance()
+{
+	CanAdjustCameraDistance = true;
+}
+
+void ARPGCharacter::ResetCameraDistance()
+{
+	CanAdjustCameraDistance = false;
+}
+
+void ARPGCharacter::ClearTimer()
+{
+	if (IsTimerActive())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
+	}
+}
+
+bool ARPGCharacter::IsTimerActive()
+{
+	return GetWorld()->GetTimerManager().IsTimerActive(TimerHandle);
+}
+ 
+
+void ARPGCharacter::DodgeEnd()
+{
+	ActionState = EActionState::EAS_Neutral;
 }
 
 void ARPGCharacter::CalculateMovementSpeed()
@@ -152,7 +195,6 @@ void ARPGCharacter::CalculateMovementSpeed()
 		IsSprinting = false;
 	}
 
-	CanAdjustCameraDistance = IsSprinting ? true : false;
 	bUseControllerRotationYaw = CurrentSpeed == 0 ? false : true;
 
 	AdjustSpeedMultiplier();

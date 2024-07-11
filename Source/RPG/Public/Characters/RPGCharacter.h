@@ -36,6 +36,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Combat")
 	class UAnimMontage* DodgeMontage;
 
+	UFUNCTION(BlueprintCallable)
+	void DodgeEnd();
+
 private:
 	UPROPERTY(VisibleAnywhere)
 	class USpringArmComponent* CameraBoom;
@@ -45,11 +48,18 @@ private:
 
 	//camera
 	void AdjustCameraDistance();
-	float MaxTargetArmLength = 200.f;
+	float MaxTargetArmLength = 250.f;
 	float MinTargetArmLength = 150.f;
 	float InterpSpeed = 2.f;
 	UPROPERTY(VisibleAnywhere)
 	bool CanAdjustCameraDistance = false;
+	void ResetCameraDistance();
+	void IncreaseCameraDistance();
+
+	//timer
+	FTimerHandle TimerHandle;
+	void ClearTimer();
+	bool IsTimerActive();
 
 	//character movement
 	float SprintingSpeedMultiplier = 0.5f;
